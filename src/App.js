@@ -75,8 +75,7 @@ class BuyPixelApp extends Component {
       x: 0,
       y: 0,
       rgb: '',
-      memo: '',
-      url: ''
+      memo: '',      
     }
   }
 
@@ -84,26 +83,24 @@ class BuyPixelApp extends Component {
     const x = parseInt(this.state.x)
     const y = parseInt(this.state.y)
     const rgb = this.state.rgb
-    const memo = this.state.memo
-    const url = this.state.url
+    const memo = this.state.memo    
 
     const pixelInstance = this.props.pixelInstance
     const web3 = this.props.web3
 
     web3.eth.getAccounts((err, accounts) => {
-      pixelInstance.buyPixel(x, y, rgb, memo, url, {from: accounts[0], to: pixelInstance.address, value: web3.toWei(parseFloat(0.01), 'ether')})      
+      pixelInstance.buyPixel(x, y, rgb, web3.toHex(memo), {from: accounts[0], to: pixelInstance.address, value: web3.toWei(parseFloat(0.01), 'ether')})      
     })    
   }
 
   render () {
     return (
       <div>
-        buy a pixel<br/>
-        x: <input onChange={(e) => this.setState({x: e.target.value})}/><br/>
-        y: <input onChange={(e) => this.setState({y: e.target.value})}/><br/>
-        rgb: <input onChange={(e) => this.setState({rgb: e.target.value})}/><br/>
-        memo: <input onChange={(e) => this.setState({memo: e.target.value})}/><br/>
-        url: <input onChange={(e) => this.setState({url: e.target.value})}/><br/>
+        <strong>buy a pixel</strong><br/>
+        x: <input placeholder='5' onChange={(e) => this.setState({x: e.target.value})}/><br/>
+        y: <input placeholder='7' onChange={(e) => this.setState({y: e.target.value})}/><br/>
+        rgb: <input placeholder='0x00ff00' onChange={(e) => this.setState({rgb: e.target.value})}/><br/>
+        memo: <input placeholder='good day m8' onChange={(e) => this.setState({memo: e.target.value})}/><br/>        
         <button onClick={this.buyPixel}>buy me this pixel</button>
       </div>
     )
@@ -141,6 +138,7 @@ class App extends Component {
         this.instantiateContract()
       })
       .catch((err) => {
+        alert('metamask not found, please use a web3 compatiable browser, or install metamask.')
         console.log(err)
         console.log('Error finding web3.')
       })
@@ -173,49 +171,64 @@ class App extends Component {
           canvasItems: canvasItems,  
           canvasSize: canvasSize,
           canvasGridLines: canvasGridLines
-        })
+        }, () => this.updatePixels())
       })
     })    
   }
 
   updateHoverPixelInfo = (x, y) => {
+    const web3 = this.state.web3
     const pixelInstance = this.state.pixelInstance
 
     pixelInstance.getPixel(x, y)
     .then((result) => {      
-      const address = result[0]
-      const rgb = result[1]
-      const memo = result[2]
-      const url = result[3]
-      
-      this.setState({
-        hoverMemo: memo,
-        hoverURL: url,
-        hoverAddress: address,
-        hoverXY: x + ', ' + y
-      })
+      const owned = result[0]
+      const address = result[1]      
+      const memo = web3.toAscii(result[2])
+
+      if (owned){
+        this.setState({
+          hoverMemo: memo,
+          hoverAddress: address,
+          hoverXY: x + ', ' + y
+        })
+      }
+
+      else {
+        this.setState({
+          hoverMemo: 'free for purchase',
+          hoverAddress: '',
+          hoverXY: x + ', ' + y
+        })
+      }  
     })
   }
 
   updatePixels = () => {
     const pixelInstance = this.state.pixelInstance
 
-    // LOL n^2
-    for (let x = 0; x < this.state.canvasSize; x++) {
-      for (let y = 0; y < this.state.canvasSize; y++) {
-        pixelInstance.getPixelColor(x, y)
-        .then((result) => {
-          // Default value, ignore
-          if (result !== '#ffffff') {            
-            let curCanvas = this.state.canvasItems          
-            curCanvas[x][y] = result
-            this.setState({
-              canvasItems: curCanvas
-            })
-          }          
-        })
-      }
+    // Get them by row so it doesn't hog shit up
+    let pixelPromises = []
+    for (let y = 0; y < this.state.canvasSize; y++){
+      pixelPromises.push(pixelInstance.getRowPixelsColorDump(y))
     }
+
+    // Map over all promises
+    Promise.all(pixelPromises)
+    .then((results) => {
+      let canvasItems = this.state.canvasItems
+
+      for (let x = 0; x < this.state.canvasSize; x++) {
+        for (let y = 0; y < this.state.canvasSize; y++) {
+          // it's [y][x] in the contract lel
+          canvasItems[x][y] = results[y][x].replace('0x', '#');
+        }        
+      }
+
+      this.setState({
+        canvasItems: canvasItems
+      })
+    })
   }  
 
   render () {
@@ -226,17 +239,16 @@ class App extends Component {
           <Pixel x={x} y={y} color={this.state.canvasItems[x][y]} updateHoverPixelInfo={this.updateHoverPixelInfo}/>
         )        
       }        
-    }  
+    }
     canvasItems.push(this.state.canvasGridLines)
 
     return (
       <div className='canvas-container'>
         <div>
-          pixel owner information<br/>
+          <strong>pixel owner information</strong><br/>
           x, y: {this.state.hoverXY}<br/>
           memo: {this.state.hoverMemo}<br/>
-          address: {this.state.hoverURL}<br/>
-          url: {this.state.hoverURL}<br/>
+          address: {this.state.hoverAddress}<br/>          
           <hr/>
         </div>
         <Stage width={this.state.canvasSize * pixelSize} height={this.state.canvasSize * pixelSize}>
@@ -244,7 +256,7 @@ class App extends Component {
             {canvasItems}
           </Layer>
         </Stage>
-        <button onClick={this.updatePixels}>Update pixels</button>
+        <button onClick={this.updatePixels}>Refresh</button>
         <hr/>
         <BuyPixelApp web3={this.state.web3} pixelInstance={this.state.pixelInstance}/>
       </div>        
