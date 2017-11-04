@@ -107,9 +107,11 @@ class BuyPixelApp extends Component {
     const web3 = this.props.web3
 
     web3.eth.getAccounts((err, accounts) => {
-      pixelInstance.buyPixel(x, y, rgb, web3.toHex(memo), {from: accounts[0], to: pixelInstance.address, value: web3.toWei(parseFloat(0.01), 'ether')})      
-    })
-    alert('bought your pixel, press the refresh button in around 30 seconds.')
+      pixelInstance.buyPixel(x, y, rgb, web3.toHex(memo), {from: accounts[0], to: pixelInstance.address, value: web3.toWei(parseFloat(0.01), 'ether')})
+      .then(() => {
+        alert('bought your pixel, press the refresh button in around 30 seconds.')
+      })
+    })    
   }
 
   render () {
