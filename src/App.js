@@ -8,7 +8,7 @@ import './css/open-sans.css'
 import './css/pure-min.css'
 import './App.css'
 
-const pixelSize = 25
+const pixelSize = 20
 
 // Given canvas size, compute coordinates
 // Need to draw grid (for konva)
@@ -270,23 +270,30 @@ class App extends Component {
     canvasItems.push(this.state.canvasGridLines)
 
     return (
-      <div className='canvas-container'>
-        <div>
-          <strong>pixel owner information</strong><br/>
-          x, y: {this.state.hoverXY}<br/>
-          memo: {this.state.hoverMemo}<br/>
-          address: {this.state.hoverAddress}<br/>          
-          <hr/>
+      <div>
+        <div className="pure-g" style={{padding: '10px'}}>
+          <div className="pure-u-1-5">
+            <strong>pixel owner information</strong><br/>
+            x, y: {this.state.hoverXY}<br/>
+            memo: {this.state.hoverMemo}<br/>
+            address: {this.state.hoverAddress}<br/>            
+          </div>
+          <div className="pure-u-1-5">
+            <BuyPixelApp
+              web3={this.state.web3} pixelInstance={this.state.pixelInstance}
+            />
+          </div>
         </div>
-        <Stage width={this.state.canvasSize * pixelSize} height={this.state.canvasSize * pixelSize}>
-          <Layer>
-            {canvasItems}
-          </Layer>
-        </Stage>
-        <button onClick={this.updatePixels}>Refresh</button>
         <hr/>
-        <BuyPixelApp web3={this.state.web3} pixelInstance={this.state.pixelInstance}/>
-      </div>        
+        <button style={{marginLeft: '10px'}} onClick={this.updatePixels}>Refresh Pixels</button>
+        <div className='canvas-container'>          
+          <Stage width={this.state.canvasSize * pixelSize} height={this.state.canvasSize * pixelSize}>
+            <Layer>
+              {canvasItems}
+            </Layer>
+          </Stage>          
+        </div>
+      </div>
     )
   }
 }
