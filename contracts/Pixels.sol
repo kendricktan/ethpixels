@@ -19,7 +19,7 @@ contract Pixels {
   PixelOwner[32][32] pixelOwners;  
 
   // Buy pixel on x, y coordinate
-  function buyPixel(uint x, uint y, bytes3 rgb, bytes32 memo) payable {    
+  function buyPixel(uint x, uint y, bytes3 rgb, bytes32 memo) public payable {    
     uint amountSent = msg.value;
     address sender = msg.sender;   
 
@@ -39,15 +39,14 @@ contract Pixels {
   }
 
   // Get all pixels on a row
-  function getRowPixelsColorDump (uint row) constant returns (bytes3[32]) {
+  function getRowPixelsColorDump (uint row) public constant returns (bytes3[32]) {
     bytes3[32] memory b;
 
-    for (uint x = 0; x < 32; x++){
+    for (uint x = 0; x < 32; x++) {
       // White by default
       if (!pixelOwners[row][x].owned) {
         b[x] = 0xffffff;
-      }
-      else{
+      } else {
         b[x] = pixelOwners[row][x].rgb;
       }
     }
@@ -55,7 +54,7 @@ contract Pixels {
     return b;
   }
 
-  function getPixel(uint x, uint y) constant returns (bool, address, bytes32) {
+  function getPixel(uint x, uint y) public constant returns (bool, address, bytes32) {
     // Just store in memory
     PixelOwner storage po = pixelOwners[y][x];
 
@@ -63,13 +62,13 @@ contract Pixels {
     return (po.owned, po.owner, po.memo);
   }
 
-  function getPixelColor(uint x, uint y) constant returns (bytes3) {
+  function getPixelColor(uint x, uint y) public constant returns (bytes3) {
     // Just store in memory
     PixelOwner storage po = pixelOwners[y][x];
     return po.rgb;
   }
 
-  function getGridSize() constant returns (uint) {
+  function getGridSize() public pure returns (uint) {
     return GRID_SIZE;
   }
 }

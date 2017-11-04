@@ -20,17 +20,21 @@ let getWeb3 = new Promise(function(resolve, reject) {
       resolve(results)
     } else {
       // Fallback to localhost if no web3 injection.
-      var provider = new Web3.providers.HttpProvider('http://localhost:8545')
+      try{
+        var provider = new Web3.providers.HttpProvider('http://localhost:8545')
 
-      web3 = new Web3(provider)
+        web3 = new Web3(provider)
 
-      results = {
-        web3: web3
+        results = {
+          web3: web3
+        }
+
+        console.log('No web3 instance injected, using Local web3.');
+
+        resolve(results)
+      } catch (err) {
+        alert('web3 not detected, please use a web3 compatiable browser or install metamask.')
       }
-
-      console.log('No web3 instance injected, using Local web3.');
-
-      resolve(results)
     }
   })
 })

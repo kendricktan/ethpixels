@@ -82,15 +82,34 @@ class BuyPixelApp extends Component {
   buyPixel = () => {
     const x = parseInt(this.state.x)
     const y = parseInt(this.state.y)
-    const rgb = this.state.rgb
-    const memo = this.state.memo    
+    const rgb = '0x' +  this.state.rgb
+    const memo = this.state.memo
+
+    // x, y
+    if (isNaN(x) || isNaN(y)) {
+      alert('incorrect x or y value')
+      return
+    }
+
+    // error checking
+    if (!/^0x[0-9A-F]{6}$/i.test(rgb)) {
+      alert('incorrect rgb value')
+      return
+    }
+
+    // empty memo
+    if (memo === '') {
+      alert('empty memo m8')
+      return
+    }
 
     const pixelInstance = this.props.pixelInstance
     const web3 = this.props.web3
 
     web3.eth.getAccounts((err, accounts) => {
       pixelInstance.buyPixel(x, y, rgb, web3.toHex(memo), {from: accounts[0], to: pixelInstance.address, value: web3.toWei(parseFloat(0.01), 'ether')})      
-    })    
+    })
+    alert('bought your pixel, press the refresh button in around 30 seconds.')
   }
 
   render () {
@@ -99,7 +118,7 @@ class BuyPixelApp extends Component {
         <strong>buy a pixel</strong><br/>
         x: <input placeholder='5' onChange={(e) => this.setState({x: e.target.value})}/><br/>
         y: <input placeholder='7' onChange={(e) => this.setState({y: e.target.value})}/><br/>
-        rgb: <input placeholder='0x00ff00' onChange={(e) => this.setState({rgb: e.target.value})}/><br/>
+        rgb: <input placeholder='00ff00' onChange={(e) => this.setState({rgb: e.target.value})}/><br/>
         memo: <input placeholder='good day m8' onChange={(e) => this.setState({memo: e.target.value})}/><br/>        
         <button onClick={this.buyPixel}>buy me this pixel</button>
       </div>
@@ -138,7 +157,7 @@ class App extends Component {
         this.instantiateContract()
       })
       .catch((err) => {
-        alert('metamask not found, please use a web3 compatiable browser, or install metamask.')
+        alert('web3 not found, please use a web3 compatiable browser, or install metamask.')
         console.log(err)
         console.log('Error finding web3.')
       })
@@ -173,7 +192,15 @@ class App extends Component {
           canvasGridLines: canvasGridLines
         }, () => this.updatePixels())
       })
-    })    
+    })
+    .catch((err) => {
+      // JSON RPC error = no web3
+      if (err.toString().indexOf('RPC') !== -1) {
+        alert('web3 not detected, please use a compatiable web3 browser or install the metamask extension')
+      } else {
+        alert('ethpixel has only been deployed on rinkeby testnet, please change your network in web3 or metamask to rinkeby')
+      }
+    })
   }
 
   updateHoverPixelInfo = (x, y) => {
