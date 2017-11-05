@@ -153,94 +153,87 @@ class App extends Component {
     }
   }
 
-  componentWillMount () {
+  componentDidMount = async () => {
     // Get network provider and web3 instance.
     // See utils/getWeb3 for more info.
-    getWeb3
-      .then(results => {
-        this.setState({
-          web3: results.web3
-        })
-
-        // Instantiate contract once web3 provided.
-        this.instantiateContract()
-      })
-      .catch((err) => {
-        alert('web3 not found, please use a web3 compatiable browser, or install metamask.')
-        console.log(err)
-        console.log('Error finding web3.')
-      })
+    try {
+      const results = await getWeb3
+      this.setState({ web3: results.web3 })
+      this.instantiateContract()
+    } catch (err) {
+      alert('web3 not found, please use a web3 compatiable browser, or install metamask.')
+      console.log(err)
+      console.log('Error finding web3.')
+    }
   }
 
-  instantiateContract () {
+  instantiateContract = async () => {
     const contract = require('truffle-contract')
     const pixelContract = contract(PixelContract)
     pixelContract.setProvider(this.state.web3.currentProvider)
 
-    pixelContract.deployed()
-    .then((instance) => {
-      instance.getGridSize().then((result) => {        
-        // Result is BigNumber object
-        const canvasSize = result.c[0]  
-        const linePoints = getGridCoordinate(canvasSize * pixelSize)      
-        const canvasGridLines = <Line key={'line'} points={linePoints} stroke='black' strokeWidth={1} />
-
-        // Construct initial canvas (all white)
-        let canvasItems = {}
-        for (let x = 0; x < canvasSize; x++) {
-          canvasItems[x] = {}
-          for (let y = 0; y < canvasSize; y++) {
-            canvasItems[x][y] = '#ffffff'
-          }
+    try {
+      const instance = await pixelContract.deployed()
+      const result = await instance.getGridSize()
+  
+      // Result is BigNumber object
+      const canvasSize = result.c[0]  
+      const linePoints = getGridCoordinate(canvasSize * pixelSize)      
+      const canvasGridLines = <Line key={'line'} points={linePoints} stroke='black' strokeWidth={1} />
+  
+      // Construct initial canvas (all white)
+      let canvasItems = {}
+      for (let x = 0; x < canvasSize; x++) {
+        canvasItems[x] = {}
+        for (let y = 0; y < canvasSize; y++) {
+          canvasItems[x][y] = '#ffffff'
         }
-
-        this.setState({
-          pixelInstance: instance,
-          canvasItems: canvasItems,  
-          canvasSize: canvasSize,
-          canvasGridLines: canvasGridLines
-        }, () => this.updatePixels())
-      })
-    })
-    .catch((err) => {
+      }
+  
+      this.setState({
+        pixelInstance: instance,
+        canvasItems: canvasItems,  
+        canvasSize: canvasSize,
+        canvasGridLines: canvasGridLines
+      }, () => this.updatePixels())
+    } catch (err) {
       // JSON RPC error = no web3
       if (err.toString().indexOf('RPC') !== -1) {
         alert('web3 not detected, please use a compatiable web3 browser or install the metamask extension')
       } else {
         alert('ethpixel has only been deployed on rinkeby testnet, please change your network in web3 or metamask to rinkeby')
       }
-    })
+    }
   }
 
-  updateHoverPixelInfo = (x, y) => {
+  updateHoverPixelInfo = async (x, y) => {
     const web3 = this.state.web3
     const pixelInstance = this.state.pixelInstance
 
-    pixelInstance.getPixel(x, y)
-    .then((result) => {      
-      const owned = result[0]
-      const address = result[1]      
-      const memo = web3.toAscii(result[2])
+    const result = await pixelInstance.getPixel(x, y)
 
-      if (owned){
-        this.setState({
-          hoverMemo: memo,
-          hoverAddress: address,
-          hoverXY: x + ', ' + y
-        })
-      }
+    const owned = result[0]
+    const address = result[1]      
+    const memo = web3.toAscii(result[2])
 
-      else {
-        this.setState({
-          hoverMemo: 'free for purchase',
-          hoverAddress: '',
-          hoverXY: x + ', ' + y
-        })
-      }  
-    })
+    if (owned){
+      this.setState({
+        hoverMemo: memo,
+        hoverAddress: address,
+        hoverXY: x + ', ' + y
+      })
+    }
+
+    else {
+      this.setState({
+        hoverMemo: 'free for purchase',
+        hoverAddress: '',
+        hoverXY: x + ', ' + y
+      })
+    }
   }
 
-  updatePixels = () => {
+  updatePixels = async () => {
     const pixelInstance = this.state.pixelInstance
 
     // Get them by row so it doesn't hog shit up
@@ -250,20 +243,18 @@ class App extends Component {
     }
 
     // Map over all promises
-    Promise.all(pixelPromises)
-    .then((results) => {
-      let canvasItems = this.state.canvasItems
+    const results = await Promise.all(pixelPromises)
+    let canvasItems = this.state.canvasItems
+    
+    for (let x = 0; x < this.state.canvasSize; x++) {
+      for (let y = 0; y < this.state.canvasSize; y++) {
+        // it's [y][x] in the contract lel
+        canvasItems[x][y] = results[y][x].replace('0x', '#');
+      }        
+    }
 
-      for (let x = 0; x < this.state.canvasSize; x++) {
-        for (let y = 0; y < this.state.canvasSize; y++) {
-          // it's [y][x] in the contract lel
-          canvasItems[x][y] = results[y][x].replace('0x', '#');
-        }        
-      }
-
-      this.setState({
-        canvasItems: canvasItems
-      })
+    this.setState({
+      canvasItems: canvasItems
     })
   }  
 
