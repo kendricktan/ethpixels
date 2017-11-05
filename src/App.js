@@ -120,7 +120,7 @@ class BuyPixelApp extends Component {
         <strong>buy a pixel</strong><br/>
         x: <input placeholder='5' onChange={(e) => this.setState({x: e.target.value})}/><br/>
         y: <input placeholder='7' onChange={(e) => this.setState({y: e.target.value})}/><br/>
-        rgb: <input placeholder='00ff00' onChange={(e) => this.setState({rgb: e.target.value})}/><br/>
+        rgb: <input type='color' placeholder='00ff00' onChange={(e) => this.setState({rgb: e.target.value})}/><br/>
         memo: <input placeholder='good day m8' onChange={(e) => this.setState({memo: e.target.value})}/><br/>        
         <button onClick={this.buyPixel}>buy me this pixel</button>
       </div>
