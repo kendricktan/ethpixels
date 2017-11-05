@@ -74,7 +74,7 @@ class BuyPixelApp extends Component {
     this.state = {
       x: 0,
       y: 0,
-      rgb: '',
+      rgb: '#000000',
       memo: '',      
     }
   }
@@ -82,7 +82,8 @@ class BuyPixelApp extends Component {
   buyPixel = () => {
     const x = parseInt(this.state.x)
     const y = parseInt(this.state.y)
-    const rgb = '0x' +  this.state.rgb
+    console.log(this.state.rgb)
+    const rgb = '0x' +  this.state.rgb.replace('#', '')
     const memo = this.state.memo
 
     // x, y
@@ -107,6 +108,12 @@ class BuyPixelApp extends Component {
     const web3 = this.props.web3
 
     web3.eth.getAccounts((err, accounts) => {
+      console.log(accounts)
+      if (accounts.length == 0) {
+        alert('your metamask account is locked, please unlock it')
+        return
+      }
+
       pixelInstance.buyPixel(x, y, rgb, web3.toHex(memo), {from: accounts[0], to: pixelInstance.address, value: web3.toWei(parseFloat(0.01), 'ether')})
       .then(() => {
         alert('bought your pixel, press the refresh button in around 30 seconds.')
@@ -294,6 +301,10 @@ class App extends Component {
               {canvasItems}
             </Layer>
           </Stage>          
+        </div>
+        <hr/>
+        <div style={{paddingLeft: '10px'}}>
+          Made by Kendrick Tan. <a href="http://github.com/kendricktan/ethpixels">Source Code</a>
         </div>
       </div>
     )
